@@ -36,7 +36,8 @@ export default class MessengerModule extends React.Component {
       users: [],
       matchingUsers: [],
       initialStateHash: null,
-      showPersistentMenuModal: false
+      showPersistentMenuModal: false,
+      showPersistentMenuUpdateModal: false,
     }
 
     this.handleChange = this.handleChange.bind(this)
@@ -56,6 +57,7 @@ export default class MessengerModule extends React.Component {
     this.handleDismissError = this.handleDismissError.bind(this)
     this.renderGetStartedMessage = this.renderGetStartedMessage.bind(this)
     this.getPageDetails = this.getPageDetails.bind(this)
+    this.handleUpdateToPersistentMenuList = this.handleUpdateToPersistentMenuList.bind(this)
 
   }
 
@@ -252,16 +254,14 @@ export default class MessengerModule extends React.Component {
     }
   }
 
-  handleAddToPersistentMenuList() {
+  handleAddToPersistentMenuList(obj) {
 
-    const type = ReactDOM.findDOMNode(this.newPersistentMenuType)
-    const title = ReactDOM.findDOMNode(this.newPersistentMenuTitle)
-    const value = ReactDOM.findDOMNode(this.newPersistentMenuValue)
     const item = {
-      type: type && type.value,
-      title: title && title.value,
-      value: value && value.value
+      type: obj.type,
+      title: obj.title,
+      value: obj.value
     }
+
 
     if (_.some(_.values(item), _.isEmpty)) {
       return
@@ -270,10 +270,26 @@ export default class MessengerModule extends React.Component {
     this.setState({
       persistentMenuItems: _.concat(this.state.persistentMenuItems, item)
     })
+  }
 
-    type.selected = 'postback'
-    title.value = ''
-    value.value = ''
+  handleUpdateToPersistentMenuList(next,current,name) {
+    const omitFields = [
+      'showPersistentMenuUpdateModal'
+    ]
+    const item = {
+      type: next.type,
+      title: next.title,
+      value: next.value,
+      showPersistentMenuUpdateModal:false
+    }
+    let copy = _.clone(this.state[name])
+    let index = _.findIndex(this.state[name],current)
+    let row = _.find(this.state[name],current)
+    row = item
+    copy.splice(index,1,row)
+    this.setState({
+      [name]: copy
+    })
   }
 
   handleAddToPaymentTesterList() {
@@ -631,26 +647,43 @@ export default class MessengerModule extends React.Component {
 
   renderPersistentMenuItem(item) {
     const handleRemove = () => this.handleRemoveFromList(item, 'persistentMenuItems')
-    return <ListGroupItem key={item.title}>
-        {item.type + ' | ' + item.title + ' | ' + item.value}
+    const updateMenu = () => this.updatePersistenMenuItem(item, 'persistentMenuItems')
+    const handleUpdateItem = (current) => this.handleUpdateToPersistentMenuList(current,item,'persistentMenuItems')
+    return <ListGroupItem key={item.title} >
+        {item.type + ' | ' + item.title + ' | ' + item.payload || item.value}
+        {item.showPersistentMenuUpdateModal ? <PersistentMenuModal show={item.showPersistentMenuUpdateModal} onHide={updateMenu} item={item} update={handleUpdateItem} /> : null }
         <Glyphicon
           className="pull-right"
           glyph="remove"
           onClick={handleRemove} />
+        {' '}
+        <Glyphicon
+          className="pull-right"
+          glyph="edit"
+          onClick={updateMenu} />
+        {' '}
       </ListGroupItem>
   }
 
-  addMenuItem() {
+  addMenuItem(event) {
+    event.preventDefault()
     this.setState({ showPersistentMenuModal: true })
-
-    // setTimeout(() => {
-    //   this.setState({ showPersistentMenuModal: false })
-    // }, 2000)
   }
 
   onClosePersistentMenuModal() {
-    console.log('on Close called')
     this.setState({ showPersistentMenuModal: false })
+  }
+
+
+  updatePersistenMenuItem(value, name) {
+    let copy = _.clone(this.state[name])
+    let index = _.findIndex(this.state[name],value)
+    let row = _.find(this.state[name],value)
+    row.showPersistentMenuUpdateModal = !row.showPersistentMenuUpdateModal
+    copy.splice(index,1,row)
+    this.setState({
+      [name]: copy
+    })
   }
 
   renderPersistentMenuList() {
@@ -673,21 +706,6 @@ export default class MessengerModule extends React.Component {
         </FormGroup>
       </div>
     )
-
-    /* <FormGroup>
-          <Col smOffset={3} sm={7}>
-            <ControlLabel>Add a new item:</ControlLabel>
-            <FormControl ref={r => this.newPersistentMenuType = r} componentClass="select" placeholder="postback">
-              <option value="postback">Postback</option>
-              <option value="url">URL</option>
-            </FormControl>
-            <FormControl ref={r => this.newPersistentMenuTitle = r} type="text" placeholder="Title"/>
-            <FormControl ref={r => this.newPersistentMenuValue = r} type="text" placeholder="Value"/>
-            <Button className='bp-button' onClick={() => this.handleAddToPersistentMenuList()}>
-              Add to menu
-            </Button>
-          </Col>
-        </FormGroup> */
   }
 
   renderSaveButton() {
@@ -855,14 +873,13 @@ export default class MessengerModule extends React.Component {
       </Alert>
     )
   }
-
   renderAllContent() {
     return <div>
       {this.state.error ? this.renderErrorAlert() : null}
       {this.renderUnsavedAlert()}
       {this.renderMessageAlert()}
       {this.renderForm()}
-      <PersistentMenuModal show={this.state.showPersistentMenuModal} onHide={::this.onClosePersistentMenuModal} />
+      {this.state.showPersistentMenuModal ? <PersistentMenuModal show={this.state.showPersistentMenuModal} onHide={::this.onClosePersistentMenuModal} add={this.handleAddToPersistentMenuList} /> : null }
     </div>
   }
 

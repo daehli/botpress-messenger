@@ -1,7 +1,6 @@
 var webpack = require('webpack')
 var nodeExternals = require('webpack-node-externals')
 var pkg = require('./package.json')
-
 var nodeConfig = {
   devtool: 'source-map',
   entry: ['./src/index.js'],
@@ -34,7 +33,6 @@ var nodeConfig = {
     }]
   }
 }
-
 var webConfig = {
   devtool: 'source-map',
   entry: ['./src/views/index.jsx'],
@@ -44,6 +42,10 @@ var webConfig = {
     filename: 'web.bundle.js',
     libraryTarget: 'assign',
     library: ['botpress', pkg.name]
+  },
+  externals: {
+    'react': 'React',
+    'react-dom': 'ReactDOM'
   },
   resolve: {
     extensions: ['', '.js', '.jsx']
@@ -72,19 +74,16 @@ var webConfig = {
     }]
   }
 }
-
 var compiler = webpack([nodeConfig, webConfig])
 var postProcess = function(err, stats) {
   if (err) throw err
   console.log(stats.toString('minimal'))
 }
-
 if (process.argv.indexOf('--compile') !== -1) {
   compiler.run(postProcess)
 } else if (process.argv.indexOf('--watch') !== -1) {
   compiler.watch(null, postProcess)
 }
-
 module.exports = {
   web: webConfig,
   node: nodeConfig

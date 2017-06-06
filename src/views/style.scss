@@ -39,3 +39,18 @@
 .insideRadioFormGroup {
   margin-top: 7px;
 }
+
+.quick_reply label {
+    margin:4px;
+    background-color:#EFEFEF;
+    border-radius:4px;
+    border:1px solid #D0D0D0;
+    overflow:auto;
+}
+.quick_reply label:hover {
+  background: green
+}
+
+.quick_reply label input[type="radio"] {
+  display: none;
+}
